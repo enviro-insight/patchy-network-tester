@@ -1,0 +1,8 @@
+# Ignore everything by default
+*
+
+# But keep the function entry point and package.json files
+!server.js
+!package.json
+!package-lock.json
+!.gcloudignore
