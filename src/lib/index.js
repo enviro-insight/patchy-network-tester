@@ -8,7 +8,7 @@ function timeoutSignal(ms) {
 
 export async function probeNetwork(healthUrl, {
   attempts = 3,
-  pingTimeoutMs = 800,
+  pingTimeoutMs = 3000,
   minSuccesses = 2,
   expectBytes = 0,          // set if your /healthz returns a known payload size
   minThroughputKbps = 0     // e.g. 64 to enforce ~64 KB/s
@@ -19,21 +19,20 @@ export async function probeNetwork(healthUrl, {
     const { signal, cancel } = timeoutSignal(pingTimeoutMs);
     const start = performance.now();
     try {
-      const res = await fetch(`${healthUrl}?_=${Date.now()}-${i}`, {
+      console.log(`Probing ${apiBase}${healthUrl} (attempt ${i + 1}/${attempts})`);
+      const res = await fetch(`${apiBase}${healthUrl}`, {
         method: 'GET',
-        cache: 'no-store',
-        //ignore cors
-        mode: 'no-cors',
         signal
       });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
+      if (!res.ok) throw new Error('HTTP ' + res.message);
       const ab = await res.arrayBuffer();
       const ms = performance.now() - start;
       ok++;
       totalMs += ms;
+      console.log('got', ab.byteLength, 'bytes in', Math.round(ms), 'ms');
       totalBytes += ab.byteLength || 0;
-    } catch (_) {
-      // ignore; just count as a failed probe
+    } catch (e) {
+      console.error('Error during network probe:', e);
     } finally {
       cancel();
     }
@@ -55,7 +54,7 @@ export async function probeNetwork(healthUrl, {
 
 export async function saveResult(result) {
   // post to /result endpoint
-  const res = await fetch('/api/result', {
+  const res = await fetch(apiBase + '/api/result', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(result)
@@ -77,4 +76,12 @@ export function getGeoCoordinates() {
       (error) => reject(error)
     );
   });
+}
+
+export async function fetchJson(url) {
+  const res = await fetch(apiBase + url);
+  if (!res.ok) {
+    throw new Error('Failed to fetch JSON');
+  }
+  return res.json();
 }

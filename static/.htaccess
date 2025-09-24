@@ -1,27 +1,28 @@
-# <!-- <IfModule mod_rewrite.c>
-# 	RewriteEngine On
-# 	RewriteBase /
-# 	RewriteRule ^index\.html$ - [L]
-# 	RewriteCond %{REQUEST_FILENAME} !-f
-# 	RewriteCond %{REQUEST_FILENAME} !-d
-# 	RewriteRule . /index.html [L]
-# </IfModule> -->
-
+# Block accidental env leaks
 <FilesMatch "^\.env$">
   Require all denied
 </FilesMatch>
+
+# Disable directory listings & weird content negotiation
+<IfModule mod_autoindex.c>
+  Options -Indexes
+</IfModule>
+<IfModule mod_negotiation.c>
+  Options -MultiViews
+</IfModule>
+
+# Prefer these as the directory index (SvelteKit static output)
+DirectoryIndex index.html 200.html
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
 
-  # Allow direct access to existing files and PHP scripts
-  RewriteCond %{REQUEST_FILENAME} -f
-  RewriteRule ^ - [L]
-
+  # Serve existing files or directories directly
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
-  # Otherwise, serve 200.html for frontend routes
-  RewriteRule . /200.html [L]
+  # SPA fallback for client-side routes
+  RewriteRule ^ /200.html [L]
 </IfModule>

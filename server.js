@@ -1,6 +1,7 @@
 // Node.js 18/20
 import functions from '@google-cloud/functions-framework';
 import express from 'express';
+import cors from 'cors';
 import { webcrypto } from 'node:crypto'; // use Web Crypto in Node
 import { MongoClient, ServerApiVersion } from 'mongodb';
 import 'dotenv/config'
@@ -19,6 +20,7 @@ const db = mongo.db('vppro');
 const collection = db.collection('patchy');
 
 const app = express();
+app.use(cors());
 
 app.get('/', (req, res) => {
   res.set({
@@ -37,17 +39,27 @@ app.get('/marco', (req, res) => {
   res.send('polo');
 });
 
-app.get('/healthz', (req, res) => {
-  const size = Math.floor(Math.random() * 9000) + 1000; // 1000–10000 bytes
-  const payload = new Uint8Array(size);
-  webcrypto.getRandomValues(payload);
-
+app.get('/json', (req, res) => {
   res.set({
-    'Content-Type': 'application/octet-stream',
+    'Content-Type': 'application/json',
     'Cache-Control': 'no-store',
   });
-  // Ensure raw bytes are sent (not JSON)
-  res.send(Buffer.from(payload));
+  res.json({ message: 'Hello from Patchy API' });
+});
+
+// Simple /ping endpoint that returns random binary data between 1000 and 10000 bytes
+app.get('/ping', (req, res) => {
+  const size = Math.floor(Math.random() * 9000) + 1000; // 1000–10000
+  const bytes = new Uint8Array(size);
+  webcrypto.getRandomValues(bytes);
+
+  // Make a Buffer that respects byteOffset/byteLength
+  const buf = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+
+  res.setHeader('Content-Type', 'application/octet-stream');
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Content-Length', String(buf.length));
+  res.end(buf); // use end() for raw binary
 });
 
 app.get('/results', async (req, res) => {
