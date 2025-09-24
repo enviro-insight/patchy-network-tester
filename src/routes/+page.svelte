@@ -2,7 +2,7 @@
 	import { UAParser } from 'ua-parser-js';
 	import { fade } from 'svelte/transition';
 	import { probeNetwork, saveResult, getGeoCoordinates } from '$lib';
-	import logo from '$lib/assets/favicon.svg';
+	import logo from '$lib/assets/favicon.png';
 
 	// create and store deviceID in localStorage if not exists
 	const deviceID = localStorage.getItem('vppro-patchy-deviceID');
@@ -13,9 +13,17 @@
 
 	const { browser, os, device } = UAParser(navigator.userAgent);
 
+	let provider = $state('');
 	let lastResult = $state(null);
 	let fetching = $state(false);
 	let saved = $state(false);
+
+	provider = localStorage.getItem('vppro-patchy-provider');
+
+	function handleProviderChange(event) {
+		provider = event.target.value;
+		localStorage.setItem('vppro-patchy-provider', provider);
+	}
 
 	async function testNetwork() {
 		saved = false;
@@ -55,6 +63,7 @@
 			};
 
 			result.deviceID = deviceID;
+			result.provider = provider || 'not selected';
 
 			lastResult = result;
 		}
@@ -73,11 +82,30 @@
 </script>
 
 <main class="flex h-screen w-screen flex-col items-center justify-center gap-4">
-	<div
-		class="flex h-4/5 flex-col items-center justify-center rounded-lg border border-gray-300 px-8"
+	<!-- <div
+		class="relative flex h-4/5 flex-col items-center justify-center rounded-lg border border-gray-300 px-8"
 	>
-		<img src={logo} alt="app icon" />
+</div> -->
+	<div class="relative">
+		<img class="absolute -top-5 -right-6 h-16 w-16" src={logo} alt="app icon" />
 		<h1 class="text-3xl text-gray-500">Lets test the network!</h1>
+		<select
+			name="provider"
+			id="provider"
+			placeholder="Select your provider"
+			onchange={handleProviderChange}
+			class="mt-4 w-full rounded border border-gray-300 p-2"
+			class:text-gray-400={!provider}
+		>
+			<option value="" class="text-gray-400">Select your provider</option>
+			<option value="vodacom" class="text-gray-800">Vodacom</option>
+			<option value="mtn" class="text-gray-800">MTN</option>
+			<option value="cell-c" class="text-gray-800">Cell C</option>
+			<option value="telkom" class="text-gray-800">Telkom</option>
+			<option value="rain" class="text-gray-800">Rain</option>
+			<option value="fibre-wifi" class="text-gray-800">Fibre Wifi</option>
+			<option value="other" class="text-gray-800">Other / Unknown</option>
+		</select>
 		<div class="flex min-h-36 flex-col items-center justify-center">
 			{#if lastResult}
 				{#if lastResult.avgMs == Infinity}
@@ -109,7 +137,7 @@
 			class:invisible={!lastResult}
 			onclick={save}>Save result</button
 		>
-		<div class="flex h-32 justify-center">
+		<div class="flex h-16 justify-center">
 			{#if saved}
 				<p class="mt-2 text-gray-500" out:fade>Saved!</p>
 			{/if}

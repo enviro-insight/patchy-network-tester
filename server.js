@@ -20,6 +20,14 @@ const collection = db.collection('patchy');
 
 const app = express();
 
+app.get('/', (req, res) => {
+  res.set({
+    'Content-Type': 'text/plain',
+    'Cache-Control': 'no-store',
+  });
+  res.send('Hello from Patchy API');
+});
+
 app.get('/marco', (req, res) => {
   console.log('received marco ping');
   res.set({
@@ -40,6 +48,16 @@ app.get('/healthz', (req, res) => {
   });
   // Ensure raw bytes are sent (not JSON)
   res.send(Buffer.from(payload));
+});
+
+app.get('/results', async (req, res) => {
+  const { limit = 1000, offset = 0 } = req.query;
+  const results = await collection.find().skip(Number(offset)).limit(Number(limit)).toArray();
+  res.set({
+    'Content-Type': 'application/json',
+    'Cache-Control': 'no-store',
+  });
+  res.json(results);
 });
 
 app.post('/result', express.json(), async (req, res) => {

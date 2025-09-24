@@ -1,4 +1,5 @@
-// place files you want to import through the `$lib` alias in this folder.
+const apiBase = import.meta.env.VITE_API_URL;
+
 function timeoutSignal(ms) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), ms);
