@@ -54,13 +54,13 @@ export async function probeNetwork(healthUrl, {
 
 export async function saveResult(result) {
   // post to /result endpoint
-  const res = await fetch(apiBase + '/api/result', {
+  const res = await fetch(apiBase + '/result', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(result)
   });
   if (!res.ok) {
-    console.warn('Failed to save result:', res.statusText);
+    throw new Error('Failed to save result: ' + res.status);
   }
   else {
     console.log('Result saved successfully');

@@ -20,15 +20,16 @@
 	let saved = $state(false);
 
 	provider = localStorage.getItem('vppro-patchy-provider');
+	console.log('Initial provider:', provider);
 
 	let infoDialog;
 
 	function handleProviderChange(event) {
-		provider = event.target.value;
 		localStorage.setItem('vppro-patchy-provider', provider);
 	}
 
 	async function testNetwork() {
+		const testStart = performance.now();
 		saved = false;
 		const to = setTimeout(() => {
 			fetching = true;
@@ -67,6 +68,9 @@
 			result.deviceID = deviceID;
 			result.provider = provider || 'not selected';
 
+			const testEnd = performance.now();
+			result.testDurationMs = Math.round(testEnd - testStart);
+
 			lastResult = result;
 		}
 
@@ -77,7 +81,14 @@
 	const save = async () => {
 		if (!lastResult) return;
 		saving = true;
-		await saveResult(lastResult);
+		try {
+			await saveResult(lastResult);
+		} catch (e) {
+			console.error('Error saving result:', e);
+			alert('Error saving result: ' + e.message);
+			saving = false;
+			return;
+		}
 		saving = false;
 		saved = true;
 		lastResult = null;
@@ -114,6 +125,7 @@
 				name="provider"
 				id="provider"
 				placeholder="Select your provider"
+				bind:value={provider}
 				onchange={handleProviderChange}
 				class="mt-4 w-full rounded border border-gray-300 p-2"
 				class:text-gray-400={!provider}
