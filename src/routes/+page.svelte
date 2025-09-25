@@ -101,6 +101,13 @@
 </script>
 
 <main class="flex h-screen w-screen flex-col items-center justify-center gap-4">
+	<div class="hidden w-full justify-end md:flex">
+		<a
+			href="/results"
+			class="m-4 rounded bg-gray-200 p-2 text-gray-700 hover:cursor-pointer hover:bg-gray-300"
+			>View Results</a
+		>
+	</div>
 	<div class="relative m-auto flex h-full flex-col items-center justify-center gap-4 p-8">
 		<button
 			class="absolute top-5 right-5 text-gray-400 hover:cursor-pointer"

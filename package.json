@@ -16,6 +16,7 @@
 	},
 	"dependencies": {
 		"@google-cloud/functions-framework": "^3.5.1",
+		"@googlemaps/js-api-loader": "^1.16.10",
 		"@sveltejs/adapter-static": "^3.0.9",
 		"cors": "^2.8.5",
 		"dotenv": "^17.2.2",

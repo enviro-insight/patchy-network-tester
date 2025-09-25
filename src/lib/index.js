@@ -85,3 +85,18 @@ export async function fetchJson(url) {
   }
   return res.json();
 }
+
+export async function fetchAllResults() {
+  const results = [];
+  let offset = 0;
+  const limit = 1000;
+
+  while (true) {
+    const batch = await fetchJson(`/results?limit=${limit}&offset=${offset}`);
+    results.push(...batch);
+    if (batch.length < limit) break; // no more results
+    offset += limit;
+  }
+
+  return results;
+}
