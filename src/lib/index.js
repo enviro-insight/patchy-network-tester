@@ -6,6 +6,20 @@ function timeoutSignal(ms) {
   return { signal: ctrl.signal, cancel: () => clearTimeout(t) };
 }
 
+export async function pingServer(pingTimeoutMs = 3000) {
+  console.log('Pinging server at', apiBase + '/ping');
+  const { signal, cancel } = timeoutSignal(pingTimeoutMs);
+  try {
+    const res = await fetch(apiBase + '/ping', { method: 'GET', signal });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message || err.toString() };
+  } finally {
+    cancel();
+  }
+}
+
 export async function probeNetwork(healthUrl, {
   attempts = 3,
   pingTimeoutMs = 3000,
@@ -66,7 +80,6 @@ export async function saveResult(result) {
     console.log('Result saved successfully');
   }
 }
-
 
 export function getGeoCoordinates() {
   if (typeof navigator === 'undefined' || !navigator.geolocation) return null;

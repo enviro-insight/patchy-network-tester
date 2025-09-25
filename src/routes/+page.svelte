@@ -1,7 +1,7 @@
 <script>
 	import { UAParser } from 'ua-parser-js';
 	import { fade } from 'svelte/transition';
-	import { probeNetwork, saveResult, getGeoCoordinates, fetchJson } from '$lib';
+	import { probeNetwork, saveResult, getGeoCoordinates, fetchJson, pingServer } from '$lib';
 	import logo from '$lib/assets/favicon.png';
 
 	// create and store deviceID in localStorage if not exists
@@ -23,6 +23,23 @@
 	console.log('Initial provider:', provider);
 
 	let infoDialog;
+
+	// warm up on page load
+	(function () {
+		console.log('running server warmup from page load');
+		fetching = true;
+
+		// for testing, 2 second delay
+		// await new Promise((resolve) => setTimeout(resolve, 2000));
+		pingServer('/ping')
+			.catch((e) => {
+				console.error('Error pinging server:', e);
+				alert('Cannot reach the server. Please check your internet connection.');
+			})
+			.finally(() => {
+				fetching = false;
+			});
+	})();
 
 	function handleProviderChange(event) {
 		localStorage.setItem('vppro-patchy-provider', provider);
@@ -98,8 +115,28 @@
 	const showInfo = () => {
 		infoDialog.showModal();
 	};
+
+	const handleVisibilityChange = async () => {
+		if (document.visibilityState === 'visible') {
+			// Check if we can reach the server
+			console.log('running server warmup from visibility change');
+			fetching = true;
+
+			// for testing, 2 second delay
+			// await new Promise((resolve) => setTimeout(resolve, 2000));
+			pingServer('/ping')
+				.catch((e) => {
+					console.error('Error pinging server:', e);
+					alert('Cannot reach the server. Please check your internet connection.');
+				})
+				.finally(() => {
+					fetching = false;
+				});
+		}
+	};
 </script>
 
+<svelte:document onvisibilitychange={handleVisibilityChange} onload={handlePageLoad} />
 <main class="flex h-screen w-screen flex-col items-center justify-center gap-4">
 	<div class="hidden w-full justify-end md:flex">
 		<a
