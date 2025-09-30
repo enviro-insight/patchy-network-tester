@@ -43,7 +43,6 @@ export async function probeNetwork(healthUrl, {
       const ms = performance.now() - start;
       ok++;
       totalMs += ms;
-      console.log('got', ab.byteLength, 'bytes in', Math.round(ms), 'ms');
       totalBytes += ab.byteLength || 0;
     } catch (e) {
       console.error('Error during network probe:', e);
@@ -52,17 +51,22 @@ export async function probeNetwork(healthUrl, {
     }
   }
 
+  console.log('calculating avgMs')
   const avgMs = ok ? totalMs / ok : Infinity;
+  console.log('calculating kbps')
   const kbps = ok
     ? ((expectBytes ? expectBytes * ok : totalBytes) / (totalMs / 1000)) / 1024
     : 0;
 
+  console.log('checking passes')
   const passes =
     ok >= minSuccesses &&
     (minThroughputKbps ? kbps >= minThroughputKbps : true);
 
+  console.log('building result')
   const result = { passes, ok, avgMs, kbps };
 
+  console.log('returning result')
   return result;
 }
 
@@ -81,12 +85,64 @@ export async function saveResult(result) {
   }
 }
 
+// Shared watcher that keeps the freshest position
+let latestPos = null;
+let watchId = null;
+
+function ensureWatcher(opts = { enableHighAccuracy: false, maximumAge: 10000 }) {
+  if (watchId !== null) return;
+  watchId = navigator.geolocation.watchPosition(
+    pos => { latestPos = pos; },
+    err => { /* optional: handle/telemetry */ },
+    opts
+  );
+}
+
+// Fast "get" that returns cached if fresh, else waits briefly for an update
+export function getFastPosition({
+  maxAgeMs = 3000,           // accept a fix up to 10s old
+  waitMs = 1000,              // how long to wait for a newer fix
+  highAccuracy = false
+} = {}) {
+  ensureWatcher({ enableHighAccuracy: highAccuracy, maximumAge: maxAgeMs });
+
+  const freshEnough = latestPos && (Date.now() - latestPos.timestamp) <= maxAgeMs;
+  if (freshEnough) return Promise.resolve(latestPos);
+
+  return new Promise((resolve, reject) => {
+    const onUpdate = (pos) => {
+      if ((Date.now() - pos.timestamp) <= maxAgeMs) {
+        cleanup(); resolve(pos);
+      }
+    };
+    const cleanup = () => {
+      navigator.geolocation.clearWatch(tempWatch);
+      clearTimeout(t);
+    };
+    const tempWatch = navigator.geolocation.watchPosition(onUpdate, err => { cleanup(); reject(err); }, {
+      enableHighAccuracy: highAccuracy,
+      maximumAge: 0
+    });
+    const t = setTimeout(() => {
+      cleanup();
+      latestPos ? resolve(latestPos) : reject(new Error('Timed out waiting for fresh position'));
+    }, waitMs);
+  });
+}
+
+
 export function getGeoCoordinates() {
   if (typeof navigator === 'undefined' || !navigator.geolocation) return null;
   return new Promise((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(
-      (position) => resolve(position.coords),
-      (error) => reject(error)
+      (position) => {
+        console.log('got geo position');
+        resolve(position.coords)
+      },
+      (error) => {
+        console.log('geo position error')
+        reject(error)
+      }
     );
   });
 }

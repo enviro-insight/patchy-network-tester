@@ -1,7 +1,14 @@
 <script>
 	import { UAParser } from 'ua-parser-js';
 	import { fade } from 'svelte/transition';
-	import { probeNetwork, saveResult, getGeoCoordinates, fetchJson, pingServer } from '$lib';
+	import {
+		probeNetwork,
+		saveResult,
+		getGeoCoordinates,
+		getFastPosition,
+		fetchJson,
+		pingServer
+	} from '$lib';
 	import logo from '$lib/assets/favicon.png';
 
 	// create and store deviceID in localStorage if not exists
@@ -52,7 +59,8 @@
 			fetching = true;
 		}, 100);
 
-		const [coords, result] = await Promise.all([getGeoCoordinates(), probeNetwork('/ping')]).catch(
+		console.log('getting geo coordinates and probing network');
+		const [coords, result] = await Promise.all([getFastPosition(), probeNetwork('/ping')]).catch(
 			(e) => {
 				console.error('Error during network test:', e);
 				return [null, null];
@@ -60,6 +68,7 @@
 		);
 
 		if (coords && result) {
+			console.log('got coords and result');
 			result.timestamp = new Date().toISOString();
 			const { latitude, longitude, accuracy } = coords;
 			result.coords = {
@@ -68,6 +77,7 @@
 				accuracy
 			};
 
+			console.log('fetching navigator.connection data');
 			if ('connection' in navigator) {
 				const conn = navigator.connection;
 				const { downlink, effectiveType, rtt, saveData, type = 'unknown' } = conn;
@@ -92,6 +102,7 @@
 		}
 
 		clearTimeout(to);
+		console.log('network test complete');
 		fetching = false;
 	}
 
@@ -136,7 +147,7 @@
 	};
 </script>
 
-<svelte:document onvisibilitychange={handleVisibilityChange} onload={handlePageLoad} />
+<svelte:document onvisibilitychange={handleVisibilityChange} />
 <main class="flex h-screen w-screen flex-col items-center justify-center gap-4">
 	<div class="hidden w-full justify-end md:flex">
 		<a
